@@ -4,10 +4,13 @@ namespace Tests\Unit;
 
 use App\Concert;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ConcertTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @test */
     function can_get_formatted_date()
     {
@@ -36,5 +39,16 @@ class ConcertTest extends TestCase
         ]);
 
         $this->assertEquals('20.50', $concert->price_in_dollars);
+    }
+
+    /** @test */
+    function can_order_concert_tickets()
+    {
+        $concert = factory(Concert::class)->state('published')->create();
+
+        $order = $concert->orderTickets($email = 'ahmed@example.com', $ticket_quantity = 3);
+
+        $this->assertEquals($email, $order->email);
+        $this->assertEquals($ticket_quantity, $order->tickets()->count());
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class Concert
  * @package App
  * @property $date
+ * @method static published()
  */
 class Concert extends Model
 {
@@ -18,6 +19,11 @@ class Concert extends Model
         'date',
         'published_at'
     ];
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
     public function getFormattedDateAttribute()
     {
@@ -37,5 +43,14 @@ class Concert extends Model
     public function scopePublished(Builder $query)
     {
         return $query->whereNotNull('published_at');
+    }
+
+    public function orderTickets(string $email, int $ticket_quantity)
+    {
+        $order = $this->orders()->create(['email' => $email]);
+
+        $order->tickets()->insert($order->tickets()->makeMany(collect()->pad($ticket_quantity, []))->toArray());
+
+        return $order;
     }
 }
