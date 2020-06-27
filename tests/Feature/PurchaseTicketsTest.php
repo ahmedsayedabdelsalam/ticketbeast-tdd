@@ -38,7 +38,7 @@ class PurchaseTicketsTest extends TestCase
         // Act
         // Purchase concert tickets
         $response = $this->json('POST', route('concerts.orders', $concert->id), [
-            'email' => 'ahmed@example.com',
+            'email' => $email = 'ahmed@example.com',
             'ticket_quantity' => $ticket_quantity,
             'payment_token' => $this->paymentGateway->getValidTestToken()
         ]);
@@ -46,6 +46,10 @@ class PurchaseTicketsTest extends TestCase
         // Assert
         // Make sure request succeeded
         $response->assertStatus(201);
+        $response->assertJsonFragment([
+            'email' => $email,
+            'ticket_quantity' => $ticket_quantity
+        ]);
         // Make sure that the customer was charged the correct amount
         $this->assertEquals(9750, $this->paymentGateway->totalCharges());
         // Make sure that an order exists for this customer
@@ -72,6 +76,7 @@ class PurchaseTicketsTest extends TestCase
     /** @test */
     function an_order_is_not_created_if_payment_fails()
     {
+        $this->withoutExceptionHandling();
         $concert = factory(Concert::class)->state('published')->create([
             'ticket_price' => 3250
         ])->addTickets($ticket_quantity = 3);

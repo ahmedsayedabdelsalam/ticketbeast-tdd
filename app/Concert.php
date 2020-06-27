@@ -4,6 +4,7 @@ namespace App;
 
 use App\Exceptions\NotEnoughTicketsException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -23,7 +24,7 @@ class Concert extends Model
 
     public function orders()
     {
-        return $this->hasMany(Order::class);
+        return $this->belongsToMany(Order::class, 'tickets');
     }
 
     public function tickets()
@@ -53,17 +54,9 @@ class Concert extends Model
 
     public function orderTickets(string $email, int $ticket_quantity)
     {
-        if ($this->tickets()->available()->count() < $ticket_quantity) {
-            throw new NotEnoughTicketsException;
-        }
+        $tickets = $this->findTickets($ticket_quantity);
 
-        $order = $this->orders()->create(['email' => $email]);
-
-        $this->tickets()->available()->take($ticket_quantity)->update([
-            'order_id' => $order->id
-        ]);
-
-        return $order;
+        return $this->createOrder($email, $tickets);
     }
 
     public function addTickets($quantity)
@@ -91,5 +84,45 @@ class Concert extends Model
     public function hasOrderFor($customer_email)
     {
         return $this->orderFor($customer_email)->exists();
+    }
+
+    /**
+     * @param int $ticket_quantity
+     * @throws NotEnoughTicketsException
+     */
+    public function findTickets(int $ticket_quantity): Collection
+    {
+        $tickets = $this->tickets()
+            ->available()
+            ->take($ticket_quantity)
+            ->get()
+            ->each(function ($ticket) { #performance
+                $ticket->setRelation('concert', $this);
+            });
+
+        if ($tickets->count() < $ticket_quantity) {
+            throw new NotEnoughTicketsException;
+        }
+
+        return $tickets;
+    }
+
+    /**
+     * @param string $email
+     * @param $tickets
+     * @return Model
+     */
+    public function createOrder(string $email, $tickets): Model
+    {
+        $order = Order::create([
+            'email' => $email,
+            'amount' => $tickets->count() * $tickets->first()->price
+        ]);
+
+        $tickets->toQuery()->update([
+            'order_id' => $order->id
+        ]);
+
+        return $order;
     }
 }
