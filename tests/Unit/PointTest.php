@@ -64,16 +64,34 @@ class PointTest extends TestCase
         $user = factory(User::class)->create();
         $another_user = factory(User::class)->create();
 
-        (new Point)->addPoints($user->id, 20, Carbon::now()->addDays(30));
-        (new Point)->addPoints($user->id, 10, Carbon::now()->addDays(20));
-        (new Point)->addPoints($user->id, 40, Carbon::now()->subDays(30));
-        (new Point)->addPoints($another_user->id, 50, Carbon::now()->addDays(30));
+        $point_1 = (new Point)->addPoints($user->id, 20, Carbon::now()->addDays(30));
+        $point_2 = (new Point)->addPoints($user->id, 10, Carbon::now()->addDays(20));
+        (new Point)->addPoints($user->id, 40, Carbon::now()->subDays(30)); // expired
+        (new Point)->addPoints($another_user->id, 50, Carbon::now()->addDays(30)); // belongs to another user
 
-        (new Point)->consumePoints($user->id, 15);
-
-
+        // this should consume 5 from 10 points (10 is old)
+        (new Point)->consumePoints($user->id, 5);
         $remaining_amount = (new Point)->getTotalValidPoints($user->id);
+        $this->assertEquals(25, $remaining_amount);
 
-        $this->assertEquals(15, $remaining_amount);
+        // this should consume the remaining 5 from 10 (old first)
+        // then consume the remaining of 12 which is 12-5=7 from the 20 point record which is next in expiration date
+        (new Point)->consumePoints($user->id, 12);
+        $remaining_amount = (new Point)->getTotalValidPoints($user->id);
+        $this->assertEquals(13, $remaining_amount);
+
+        $this->assertDatabaseHas('points', [
+            'id' => $point_1->id,
+            'initial_amount' => 20,
+            'remaining_amount' => 13,
+            'consumption_amount' => 7
+        ]);
+
+        $this->assertDatabaseHas('points', [
+            'id' => $point_2->id,
+            'initial_amount' => 10,
+            'remaining_amount' => 0,
+            'consumption_amount' => 10
+        ]);
     }
 }

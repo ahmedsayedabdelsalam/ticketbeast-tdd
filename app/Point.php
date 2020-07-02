@@ -28,7 +28,7 @@ class Point extends Model
 
     public function addPoints(int $user_id, $amount, $expiration_date = null)
     {
-        self::create([
+        return self::create([
             'user_id' => $user_id,
             'initial_amount' => $amount,
             'remaining_amount' => $amount,
@@ -46,13 +46,14 @@ class Point extends Model
 
             // consume all the amounts nearest to expire at one which summation covers the consumption amount
             $points = self::nearestAmountToExpireForUser($amount, $user_id)->get();
-            $points->toQuery()
-                ->update([
-                    'remaining_amount' => 0,
-                    'consumption_amount' => DB::raw("`remaining_amount`")
-                ]);
+            if ($points->count()) {
+                $points->toQuery()
+                    ->update([
+                        'remaining_amount' => 0,
+                        'consumption_amount' => DB::raw("`initial_amount`")
+                    ]);
+            }
             $remaining_points_after_consumption = $amount - $points->sum('remaining_amount');
-
 
             // if there are some remaining points after consuming nearest to expire points that covers the consumption amount
             // consume the remaining points from the next nearest to expire record
@@ -97,8 +98,8 @@ class Point extends Model
     {
         return $query->from(
             Point::selectRaw('*, sum(remaining_amount) OVER (ORDER BY expired_at ASC) AS total')
-                ->notExpired()
                 ->forUser($user_id)
+                ->notExpired()
                 ->hasSufficientAmount()
                 ->orderBy('expired_at'),
             'totals')
