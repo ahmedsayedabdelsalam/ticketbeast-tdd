@@ -73,7 +73,7 @@ class Concert extends Model
 
     public function ticketsRemaining()
     {
-        return $this->tickets()->whereNull('order_id')->count();
+        return $this->tickets()->available()->count();
     }
 
     public function orderFor($customer_email)
@@ -105,6 +105,15 @@ class Concert extends Model
         }
 
         return $tickets;
+    }
+
+    public function reserveTickets(int $ticket_quantity, string $email)
+    {
+        $tickets = $this->findTickets($ticket_quantity);
+
+        $tickets->toQuery()->reserve();
+
+        return new Reservation($tickets->fresh(), $email);
     }
 
     /**

@@ -27,13 +27,6 @@ class Order extends Model
         return $order;
     }
 
-    public function cancel()
-    {
-        $this->tickets()->release();
-
-        $this->delete();
-    }
-
     public function ticketQuantity()
     {
         return $this->tickets()->count();

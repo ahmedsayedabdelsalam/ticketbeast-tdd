@@ -17,6 +17,7 @@ class CreateTicketsTable extends Migration
             $table->id();
             $table->foreignId('concert_id');
             $table->foreignId('order_id')->nullable();
+            $table->timestamp('reserved_at')->nullable();
             $table->timestamps();
         });
     }
