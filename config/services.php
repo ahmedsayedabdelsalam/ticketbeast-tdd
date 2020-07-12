@@ -32,6 +32,7 @@ return [
 
     'stripe' => [
         'key' => env('STRIPE_API_KEY'),
+        'public_key' => env('STRIPE_API_PUBLIC_KEY'),
     ],
 
 ];
