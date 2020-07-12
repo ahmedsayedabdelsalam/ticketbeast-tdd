@@ -26,7 +26,7 @@
 <script>
     window.App = {
         csrfToken: '{{ csrf_token() }}',
-        stripePublicKey: {{config('services.stripe.public_key')}},
+        stripePublicKey: '{{config('services.stripe.public_key')}}',
     }
 </script>
 <script src="https://checkout.stripe.com/checkout.js"></script>
