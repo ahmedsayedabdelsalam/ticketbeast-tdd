@@ -16,3 +16,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('/concerts/{id}', 'ConcertController@show');
 
 Route::post('/concerts/{id}/orders', 'ConcertOrderController@store')->name('concerts.orders');
+
+Route::get('orders/{confirmationNumber}', 'OrdersController@show');

@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -25,6 +26,11 @@ class Order extends Model
         ]);
 
         return $order;
+    }
+
+    public static function findByConfirmationNumber($confirmationNumber)
+    {
+        return self::where('confirmation_number', $confirmationNumber)->firstOrFail();
     }
 
     public function ticketQuantity()
